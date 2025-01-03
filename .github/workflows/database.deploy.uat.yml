@@ -1,0 +1,70 @@
+name: (UAT) Database - deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      IMAGE_VERSION:
+        default: "latest"
+
+jobs:
+  deploy_database:
+    runs-on: ubuntu-latest
+    environment: uat
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.RELEASE_AWS_REGION }}
+
+      - name: Define SSM Prefix
+        id: define-ssm-prefix
+        run: echo "SSM_PREFIX=arn:aws:ssm:${{ vars.RELEASE_AWS_REGION }}:${{ vars.RELEASE_AWS_ACCOUNT_ID }}:parameter/ent/uat" >> $GITHUB_OUTPUT
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+
+      - name: Install envsubst
+        run: sudo apt-get update && sudo apt-get install -y gettext
+
+      - name: Substitute variables in task definition
+        env:
+          EXECUTION_ROLE_ARN: ${{ vars.ECS_EXECUTION_ROLE_ARN }}
+          TASK_ROLE_ARN: ${{ vars.ECS_TASK_ROLE_ARN }}
+          TASK_DEFINITION_FAMILY: ${{ vars.ECS_DB_TASK_DEFINITION_FAMILY }}
+          CPU: ${{ vars.ECS_DB_CPU }}
+          MEMORY: ${{ vars.ECS_DB_MEMORY }}
+          PORT: ${{ vars.RELEASE_DB_PORT }}
+          LOG_GROUP_NAME: ${{ vars.RELEASE_DB_LOG_GROUP_NAME }}
+          REGION: ${{ vars.RELEASE_AWS_REGION }}
+          IMAGE: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_BE_IMAGE_REPOSITORY }}:${{ inputs.IMAGE_VERSION }}"
+        run: |
+          envsubst < .github/ecs-task/database.uat.json > rendered-task-def.json
+
+      - name: Render Amazon ECS task definition
+        id: render-database-container
+        uses: aws-actions/amazon-ecs-render-task-definition@v1.6.0
+        with:
+          task-definition: rendered-task-def.json
+          container-name: database
+          image: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_DB_IMAGE_REPOSITORY }}:${{ inputs.IMAGE_VERSION }}"
+          environment-variables: |
+            FOO=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/FOO
+          secrets: |
+            MYSQL_ROOT_PASSWORD=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_DB_ROOT_PASSWORD
+            MYSQL_DATABASE=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_DB_NAME
+            MYSQL_USER=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_DB_USER
+            MYSQL_PASSWORD=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_DB_PASSWORD
+
+      - name: Deploy to Amazon ECS service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2.1.2
+        with:
+          task-definition: ${{ steps.render-database-container.outputs.task-definition }}
+          service: ${{ vars.ECS_DB_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true

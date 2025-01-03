@@ -1,0 +1,131 @@
+name: (UAT) Backend - deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      IMAGE_VERSION:
+        default: "latest"
+      MYSQL_HOST:
+        required: true
+        type: string
+
+jobs:
+  deploy_backend:
+    runs-on: ubuntu-latest
+    environment: uat
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.RELEASE_AWS_REGION }}
+
+      - name: Enable ECS Exec on Service
+        run: |
+          aws ecs update-service \
+            --region ${{ vars.RELEASE_AWS_REGION }} \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --service ${{ vars.ECS_BE_SERVICE }} \
+            --enable-execute-command
+
+      - name: Fetch Parameters from AWS SSM
+        run: |
+          PARAM_NAMES=(
+            "APP_BE_NODE_ENV"
+            "APP_SHARED_FRONTEND_URL"
+            "APP_SHARED_BACKEND_URL"
+            "APP_SHARED_COOKIE_DOMAIN"
+            "APP_BE_LOG_LEVEL"
+            "APP_BE_SERVICE_EMAIL"
+            "APP_BE_SECURITY_EMAIL"
+            "APP_SHARED_SITE_NAME"
+            "APP_BE_AWS_S3_REGION"
+            "APP_BE_AWS_S3_MEDIA_BUCKET_NAME"
+            "APP_BE_DB_PORT"
+            "APP_BE_MAILSLURP_EMAIL"
+            "APP_BE_PORT"
+          )
+
+          for PARAM in "${PARAM_NAMES[@]}"; do
+            VALUE=$(aws ssm get-parameter \
+              --name "/ent/uat/$PARAM" \
+              --with-decryption \
+              --query "Parameter.Value" \
+              --output text)
+            echo "$PARAM=$VALUE" >> $GITHUB_ENV
+          done
+
+      - name: Define SSM Prefix
+        id: define-ssm-prefix
+        run: echo "SSM_PREFIX=arn:aws:ssm:${{ vars.RELEASE_AWS_REGION }}:${{ vars.RELEASE_AWS_ACCOUNT_ID }}:parameter/ent/uat" >> $GITHUB_OUTPUT
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+
+      - name: Install envsubst
+        run: sudo apt-get update && sudo apt-get install -y gettext
+
+      - name: Substitute variables in task definition
+        env:
+          EXECUTION_ROLE_ARN: ${{ vars.ECS_EXECUTION_ROLE_ARN }}
+          TASK_ROLE_ARN: ${{ vars.ECS_TASK_ROLE_ARN }}
+          TASK_DEFINITION_FAMILY: ${{ vars.ECS_BE_TASK_DEFINITION_FAMILY }}
+          CPU: ${{ vars.ECS_BE_CPU }}
+          MEMORY: ${{ vars.ECS_BE_MEMORY }}
+          PORT: ${{ vars.RELEASE_BE_PORT }}
+          LOG_GROUP_NAME: ${{ vars.RELEASE_BE_LOG_GROUP_NAME }}
+          REGION: ${{ vars.RELEASE_AWS_REGION }}
+          IMAGE: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_BE_IMAGE_REPOSITORY }}:${{ inputs.IMAGE_VERSION }}"
+        run: |
+          envsubst < .github/ecs-task/backend.uat.json > rendered-task-def.json
+
+      - name: Render Amazon ECS task definition
+        id: render-backend-container
+        uses: aws-actions/amazon-ecs-render-task-definition@v1.6.0
+        with:
+          task-definition: rendered-task-def.json
+          container-name: backend
+          image: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_BE_IMAGE_REPOSITORY }}:${{ inputs.IMAGE_VERSION }}"
+          environment-variables: |
+            NODE_ENV=${{ env.APP_BE_NODE_ENV }}
+            FRONTEND_URL=${{ env.APP_SHARED_FRONTEND_URL }}
+            BACKEND_URL=${{ env.APP_SHARED_BACKEND_URL }}
+            COOKIE_DOMAIN=${{ env.APP_SHARED_COOKIE_DOMAIN }}
+            LOG_LEVEL=${{ env.APP_BE_LOG_LEVEL }}
+            SERVICE_EMAIL=${{ env.APP_BE_SERVICE_EMAIL }}
+            SECURITY_EMAIL=${{ env.APP_BE_SECURITY_EMAIL }}
+            SITE_NAME=${{ env.APP_SHARED_SITE_NAME }}
+            AWS_S3_REGION=${{ env.APP_BE_AWS_S3_REGION }}
+            AWS_S3_MEDIA_BUCKET_NAME=${{ env.APP_BE_AWS_S3_MEDIA_BUCKET_NAME }}
+            MYSQL_HOST=${{ inputs.MYSQL_HOST }}
+            MYSQL_PORT=${{ env.APP_BE_DB_PORT }}
+            MAILSLURP_EMAIL=${{ env.APP_BE_MAILSLURP_EMAIL }}
+            PORT=${{ env.APP_BE_PORT }}
+          secrets: |
+            MYSQL_DATABASE=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_DB_NAME
+            MYSQL_USER=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_DB_USER
+            MYSQL_PASSWORD=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_DB_PASSWORD
+            JWT_SECRET=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_JWT_SECRET
+            RESEND_API_KEY=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_RESEND_API_KEY
+            AWS_S3_ACCESS_KEY_ID=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_AWS_S3_ACCESS_KEY_ID
+            AWS_S3_SECRET_ACCESS_KEY=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_AWS_S3_SECRET_ACCESS_KEY
+            MAILSLURP_API_KEY=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_MAILSLURP_API_KEY
+            MAILSLURP_INBOX_ID=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_MAILSLURP_INBOX_ID
+
+      - name: Deploy to Amazon ECS service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2.1.2
+        with:
+          task-definition: ${{ steps.render-backend-container.outputs.task-definition }}
+          service: ${{ vars.ECS_BE_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true

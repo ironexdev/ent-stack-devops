@@ -1,0 +1,31 @@
+{
+  "family": "${TASK_DEFINITION_FAMILY}",
+  "networkMode": "bridge",
+  "requiresCompatibilities": ["EC2"],
+  "executionRoleArn": "${EXECUTION_ROLE_ARN}",
+  "taskRoleArn": "${TASK_ROLE_ARN}",
+  "containerDefinitions": [
+    {
+      "name": "database",
+      "image": "${IMAGE}",
+      "essential": true,
+      "cpu": ${CPU},
+      "memory": ${MEMORY},
+      "portMappings": [
+        {
+          "containerPort": ${PORT},
+          "hostPort": ${PORT},
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "${LOG_GROUP_NAME}",
+          "awslogs-region": "${REGION}",
+          "awslogs-stream-prefix": "database"
+        }
+      }
+    }
+  ]
+}

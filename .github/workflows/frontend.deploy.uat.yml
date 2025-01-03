@@ -1,0 +1,68 @@
+name: (UAT) Frontend - deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      IMAGE_VERSION:
+        default: "latest"
+
+jobs:
+  deploy_frontend:
+    runs-on: ubuntu-latest
+    environment: uat
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.RELEASE_AWS_REGION }}
+
+      - name: Define SSM Prefix
+        id: define-ssm-prefix
+        run: echo "SSM_PREFIX=arn:aws:ssm:${{ vars.RELEASE_AWS_REGION }}:${{ vars.RELEASE_AWS_ACCOUNT_ID }}:parameter/ent/uat" >> $GITHUB_OUTPUT
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+
+      - name: Install envsubst
+        run: sudo apt-get update && sudo apt-get install -y gettext
+
+      - name: Substitute variables in task definition
+        env:
+          EXECUTION_ROLE_ARN: ${{ vars.ECS_EXECUTION_ROLE_ARN }}
+          TASK_ROLE_ARN: ${{ vars.ECS_TASK_ROLE_ARN }}
+          TASK_DEFINITION_FAMILY: ${{ vars.ECS_FE_TASK_DEFINITION_FAMILY }}
+          CPU: ${{ vars.ECS_FE_CPU }}
+          MEMORY: ${{ vars.ECS_FE_MEMORY }}
+          PORT: ${{ vars.RELEASE_FE_PORT }}
+          LOG_GROUP_NAME: ${{ vars.RELEASE_FE_LOG_GROUP_NAME }}
+          REGION: ${{ vars.RELEASE_AWS_REGION }}
+          IMAGE: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_FE_IMAGE_REPOSITORY }}:${{ inputs.IMAGE_VERSION }}"
+        run: |
+          envsubst < .github/ecs-task/frontend.uat.json > rendered-task-def.json
+
+      - name: Render Amazon ECS task definition
+        id: render-frontend-container
+        uses: aws-actions/amazon-ecs-render-task-definition@v1.6.0
+        with:
+          task-definition: rendered-task-def.json
+          container-name: frontend
+          image: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_FE_IMAGE_REPOSITORY }}:${{ inputs.IMAGE_VERSION }}"
+          # If environment-variables are not set, then secrets are ignored - https://github.com/aws-actions/amazon-ecs-render-task-definition/issues/317
+          environment-variables: |
+            FOO=bar
+          secrets: |
+            JWT_SECRET=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_JWT_SECRET
+
+      - name: Deploy to Amazon ECS service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2.1.2
+        with:
+          task-definition: ${{ steps.render-frontend-container.outputs.task-definition }}
+          service: ${{ vars.ECS_FE_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true

@@ -1,0 +1,88 @@
+name: Run Migrations
+
+inputs:
+  MYSQL_HOST:
+    required: true
+    type: string
+  IMAGE_VERSION:
+    required: false
+    default: "latest"
+  RELEASE_AWS_ACCESS_KEY_ID:
+    required: true
+    type: string
+  RELEASE_AWS_SECRET_ACCESS_KEY:
+    required: true
+    type: string
+  RELEASE_AWS_REGION:
+    required: true
+    type: string
+  RELEASE_MR_IMAGE_REPOSITORY:
+    required: true
+    type: string
+
+outputs:
+  status:
+    value: ${{ steps.run-migrations.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install AWS CLI
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y awscli
+
+    - name: Configure AWS Credentials
+      shell: bash
+      run: |
+        aws configure set aws_access_key_id ${{ inputs.RELEASE_AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ inputs.RELEASE_AWS_SECRET_ACCESS_KEY }}
+        aws configure set region ${{ inputs.RELEASE_AWS_REGION }}
+
+    - name: Get ECR Repository URI
+      shell: bash
+      run: |
+        echo "ECR_REGISTRY=$(aws ecr describe-repositories \
+          --repository-names ${{ inputs.RELEASE_MR_IMAGE_REPOSITORY }} \
+          --query "repositories[0].repositoryUri" \
+          --output text)" >> $GITHUB_ENV
+
+    - name: Log in to Amazon ECR
+      shell: bash
+      run: |
+        aws ecr get-login-password --region ${{ inputs.RELEASE_AWS_REGION }} | \
+        docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+    - name: Fetch Parameters from AWS SSM
+      shell: bash
+      run: |
+        PARAM_NAMES=(
+          "APP_BE_DB_PORT"
+          "APP_SHARED_DB_NAME"
+          "APP_SHARED_DB_USER"
+          "APP_SHARED_DB_PASSWORD"
+        )
+
+        for PARAM in "${PARAM_NAMES[@]}"; do
+          VALUE=$(aws ssm get-parameter \
+            --name "/ent/uat/$PARAM" \
+            --with-decryption \
+            --query "Parameter.Value" \
+            --output text)
+          echo "$PARAM=$VALUE" >> $GITHUB_ENV
+        done
+
+    - name: Run SQL Migrations
+      shell: bash
+      id: run-migrations
+      run: |
+        docker run --rm \
+          --network uat-network \
+          -e MYSQL_HOST=${{ inputs.MYSQL_HOST }} \
+          -e MYSQL_PORT=${{ env.APP_BE_DB_PORT }} \
+          -e MYSQL_DATABASE=${{ env.APP_SHARED_DB_NAME }} \
+          -e MYSQL_USER=${{ env.APP_SHARED_DB_USER }} \
+          -e MYSQL_PASSWORD=${{ env.APP_SHARED_DB_PASSWORD }} \
+          ${{ env.ECR_REGISTRY }}:${{ inputs.IMAGE_VERSION }} \
+          sh -c 'MYSQL_HOST="$MYSQL_HOST" MYSQL_PORT="$MYSQL_PORT" MYSQL_DATABASE="$MYSQL_DATABASE" MYSQL_USER="$MYSQL_USER" MYSQL_PASSWORD="$MYSQL_PASSWORD" drizzle-kit migrate --config /home/node/app/drizzle.config.ts'

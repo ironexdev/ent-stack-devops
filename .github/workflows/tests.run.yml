@@ -1,0 +1,266 @@
+name: Tests - run
+
+on:
+  workflow_dispatch:
+    inputs:
+      DB_IMAGE_VERSION:
+        default: "latest"
+      BE_IMAGE_VERSION:
+        default: "latest"
+      FE_IMAGE_VERSION:
+        default: "latest"
+      MYSQL_HOST:
+        default: "database"
+
+jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.RELEASE_AWS_REGION }}
+
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Fetch Parameters from AWS SSM
+        run: |
+          PARAM_NAMES=(
+            "APP_SHARED_SITE_NAME"
+            "APP_SHARED_COOKIE_DOMAIN"
+            "APP_BE_NODE_ENV"
+            "APP_BE_SERVICE_EMAIL"
+            "APP_BE_SECURITY_EMAIL"
+            "APP_BE_LOG_LEVEL"
+            "APP_BE_AWS_S3_REGION"
+            "APP_BE_AWS_S3_MEDIA_BUCKET_NAME"
+            "APP_BE_DB_PORT"
+            "APP_BE_MAILSLURP_EMAIL"
+            "APP_BE_PORT"
+          )
+
+          SECRET_NAMES=(
+            "APP_DB_ROOT_PASSWORD"
+            "APP_SHARED_DB_NAME"
+            "APP_SHARED_DB_USER"
+            "APP_SHARED_DB_PASSWORD"
+            "APP_SHARED_JWT_SECRET"
+            "APP_BE_AWS_S3_ACCESS_KEY_ID"
+            "APP_BE_AWS_S3_SECRET_ACCESS_KEY"
+            "APP_BE_MAILSLURP_API_KEY"
+            "APP_BE_MAILSLURP_INBOX_ID"
+            "APP_BE_RESEND_API_KEY"
+          )
+
+          for PARAM in "${PARAM_NAMES[@]}"; do
+            VALUE=$(aws ssm get-parameter \
+              --name "/ent/uat/$PARAM" \
+              --query "Parameter.Value" \
+              --output text)
+            echo "$PARAM=$VALUE" >> $GITHUB_ENV
+          done
+
+          for SECRET in "${SECRET_NAMES[@]}"; do
+            VALUE=$(aws ssm get-parameter \
+              --name "/ent/uat/$SECRET" \
+              --with-decryption \
+              --query "Parameter.Value" \
+              --output text)
+            echo "::add-mask::$VALUE"
+            echo "$SECRET=$VALUE" >> $GITHUB_ENV
+          done
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+
+      - name: Create Docker Network
+        run: docker network create test-network
+
+      - name: Run Database Container
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ env.APP_DB_ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ env.APP_SHARED_DB_NAME }}
+          MYSQL_USER: ${{ env.APP_SHARED_DB_USER }}
+          MYSQL_PASSWORD: ${{ env.APP_SHARED_DB_PASSWORD }}
+          CONTAINER_PORT: ${{ vars.RELEASE_DB_PORT }}
+          IMAGE_REPOSITORY: ${{ vars.RELEASE_DB_IMAGE_REPOSITORY }}
+          IMAGE_VERSION: ${{ inputs.DB_IMAGE_VERSION }}
+        run: |
+          docker run -d \
+            --name database \
+            --network test-network \
+            -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
+            -e MYSQL_DATABASE="$MYSQL_DATABASE" \
+            -e MYSQL_USER="$MYSQL_USER" \
+            -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+            -p $CONTAINER_PORT:$CONTAINER_PORT \
+            ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION
+
+      - name: Run Backend Container
+        env:
+          SITE_NAME: ${{ env.APP_SHARED_SITE_NAME }}
+          COOKIE_DOMAIN: ${{ env.APP_SHARED_COOKIE_DOMAIN }}
+          BACKEND_URL: "http://api.ent.local:3001"
+          FRONTEND_URL: "http://ent.local:3000"
+          NODE_ENV: ${{ env.APP_BE_NODE_ENV }}
+          SERVICE_EMAIL: ${{ env.APP_BE_SERVICE_EMAIL }}
+          SECURITY_EMAIL: ${{ env.APP_BE_SECURITY_EMAIL }}
+          LOG_LEVEL: ${{ env.APP_BE_LOG_LEVEL }}
+          AWS_S3_REGION: ${{ env.APP_BE_AWS_S3_REGION }}
+          AWS_S3_IMAGES_BUCKET_NAME: ${{ env.APP_BE_AWS_S3_MEDIA_BUCKET_NAME }}
+          MYSQL_HOST: "database"
+          MYSQL_PORT: ${{ env.APP_BE_DB_PORT }}
+          MAILSLURP_EMAIL: ${{ env.APP_BE_MAILSLURP_EMAIL }}
+          PORT: ${{ env.APP_BE_PORT }}
+          MYSQL_DATABASE: ${{ env.APP_SHARED_DB_NAME }}
+          MYSQL_USER: ${{ env.APP_SHARED_DB_USER }}
+          MYSQL_PASSWORD: ${{ env.APP_SHARED_DB_PASSWORD }}
+          JWT_SECRET: ${{ env.APP_SHARED_JWT_SECRET }}
+          AWS_S3_ACCESS_KEY_ID: ${{ env.APP_BE_AWS_S3_ACCESS_KEY_ID }}
+          AWS_S3_SECRET_ACCESS_KEY: ${{ env.APP_BE_AWS_S3_SECRET_ACCESS_KEY }}
+          MAILSLURP_API_KEY: ${{ env.APP_BE_MAILSLURP_API_KEY }}
+          MAILSLURP_INBOX_ID: ${{ env.APP_BE_MAILSLURP_INBOX_ID }}
+          RESEND_API_KEY: ${{ env.APP_BE_RESEND_API_KEY }}
+          CONTAINER_PORT: ${{ vars.RELEASE_BE_PORT }}
+          IMAGE_REPOSITORY: ${{ vars.RELEASE_BE_IMAGE_REPOSITORY }}
+          IMAGE_VERSION: ${{ inputs.BE_IMAGE_VERSION }}
+        run: |
+          echo ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION
+          docker run -d \
+            --name backend \
+            --network test-network \
+            --network-alias api.ent.local \
+            --add-host api.ent.local:127.0.0.1 \
+            -e SITE_NAME="$SITE_NAME" \
+            -e COOKIE_DOMAIN="$COOKIE_DOMAIN" \
+            -e BACKEND_URL="$BACKEND_URL" \
+            -e FRONTEND_URL="$FRONTEND_URL" \
+            -e NODE_ENV="$NODE_ENV" \
+            -e SERVICE_EMAIL="$SERVICE_EMAIL" \
+            -e SECURITY_EMAIL="$SECURITY_EMAIL" \
+            -e LOG_LEVEL="$LOG_LEVEL" \
+            -e AWS_S3_REGION="$AWS_S3_REGION" \
+            -e AWS_S3_IMAGES_BUCKET_NAME="$AWS_S3_IMAGES_BUCKET_NAME" \
+            -e MYSQL_HOST="$MYSQL_HOST" \
+            -e MYSQL_PORT="$MYSQL_PORT" \
+            -e MAILSLURP_EMAIL="$MAILSLURP_EMAIL" \
+            -e PORT="$PORT" \
+            -e MYSQL_DATABASE="$MYSQL_DATABASE" \
+            -e MYSQL_USER="$MYSQL_USER" \
+            -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+            -e JWT_SECRET="$JWT_SECRET" \
+            -e AWS_S3_ACCESS_KEY_ID="$AWS_S3_ACCESS_KEY_ID" \
+            -e AWS_S3_SECRET_ACCESS_KEY="$AWS_S3_SECRET_ACCESS_KEY" \
+            -e MAILSLURP_API_KEY="$MAILSLURP_API_KEY" \
+            -e MAILSLURP_INBOX_ID="$MAILSLURP_INBOX_ID" \
+            -p $CONTAINER_PORT:$CONTAINER_PORT \
+            ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION
+
+      - name: Run Frontend Container
+        env:
+          JWT_SECRET: ${{ env.APP_SHARED_JWT_SECRET }}
+          CONTAINER_PORT: ${{ vars.RELEASE_FE_PORT }}
+          IMAGE_REPOSITORY: ${{ vars.RELEASE_FE_IMAGE_REPOSITORY }}
+          IMAGE_VERSION: ${{ inputs.FE_IMAGE_VERSION }}
+        run: |
+          docker run -d \
+            --name frontend \
+            --network test-network \
+            --network-alias ent.local \
+            --add-host ent.local:127.0.0.1 \
+            -e JWT_SECRET="$JWT_SECRET" \
+            -p $CONTAINER_PORT:$CONTAINER_PORT \
+            ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION
+
+      # TODO - do this better, actually wait for services to be ready
+      - name: Wait for Services
+        run: sleep 10
+
+      - name: Run Migrations
+        uses: ./.github/actions/run-migrations-uat
+        with:
+          MYSQL_HOST: ${{ inputs.MYSQL_HOST }}
+          IMAGE_VERSION: ${{ inputs.DB_IMAGE_VERSION }}
+          RELEASE_AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          RELEASE_AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
+          RELEASE_AWS_REGION: ${{ vars.RELEASE_AWS_REGION }}
+          RELEASE_MR_IMAGE_REPOSITORY: ${{ vars.RELEASE_MR_IMAGE_REPOSITORY }}
+
+      - name: Run Frontend Test Container
+        env:
+          NEXT_PUBLIC_FRONTEND_URL: "http://ent.local:3000"
+          IMAGE_REPOSITORY: ${{ vars.RELEASE_FE_IMAGE_REPOSITORY }}
+          IMAGE_VERSION: test-${{ inputs.FE_IMAGE_VERSION }}
+        run: |
+          docker run --rm \
+            --name frontend-test \
+            --network test-network \
+            -e NEXT_PUBLIC_FRONTEND_URL="$NEXT_PUBLIC_FRONTEND_URL" \
+            ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION \
+            pnpm frontend:test-with-trace --reporter=list
+
+      - name: Run Backend Test Container
+        env:
+          SITE_NAME: ${{ env.APP_SHARED_SITE_NAME }}
+          COOKIE_DOMAIN: ${{ env.APP_SHARED_COOKIE_DOMAIN }}
+          BACKEND_URL: "http://api.ent.local:3001"
+          FRONTEND_URL: "http://ent.local:3000"
+          NODE_ENV: ${{ env.APP_BE_NODE_ENV }}
+          SERVICE_EMAIL: ${{ env.APP_BE_SERVICE_EMAIL }}
+          SECURITY_EMAIL: ${{ env.APP_BE_SECURITY_EMAIL }}
+          LOG_LEVEL: ${{ env.APP_BE_LOG_LEVEL }}
+          AWS_S3_REGION: ${{ env.APP_BE_AWS_S3_REGION }}
+          AWS_S3_IMAGES_BUCKET_NAME: ${{ env.APP_BE_AWS_S3_IMAGES_BUCKET_NAME }}
+          MYSQL_HOST: "database"
+          MYSQL_PORT: ${{ env.APP_BE_DB_PORT }}
+          MAILSLURP_EMAIL: ${{ env.APP_BE_MAILSLURP_EMAIL }}
+          PORT: ${{ env.APP_BE_PORT }}
+          MYSQL_DATABASE: ${{ env.APP_SHARED_DB_NAME }}
+          MYSQL_USER: ${{ env.APP_SHARED_DB_USER }}
+          MYSQL_PASSWORD: ${{ env.APP_SHARED_DB_PASSWORD }}
+          JWT_SECRET: ${{ env.APP_SHARED_JWT_SECRET }}
+          AWS_S3_ACCESS_KEY_ID: ${{ env.APP_BE_AWS_S3_ACCESS_KEY_ID }}
+          AWS_S3_SECRET_ACCESS_KEY: ${{ env.APP_BE_AWS_S3_SECRET_ACCESS_KEY }}
+          MAILSLURP_API_KEY: ${{ env.APP_BE_MAILSLURP_API_KEY }}
+          MAILSLURP_INBOX_ID: ${{ env.APP_BE_MAILSLURP_INBOX_ID }}
+          IMAGE_REPOSITORY: ${{ vars.RELEASE_BE_IMAGE_REPOSITORY }}
+          IMAGE_VERSION: test-${{ inputs.BE_IMAGE_VERSION }}
+        run: |
+          echo ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION
+          docker run --rm \
+            --name backend-test \
+            --network test-network \
+            -e SITE_NAME="$SITE_NAME" \
+            -e COOKIE_DOMAIN="$COOKIE_DOMAIN" \
+            -e BACKEND_URL="$BACKEND_URL" \
+            -e FRONTEND_URL="$FRONTEND_URL" \
+            -e NODE_ENV="$NODE_ENV" \
+            -e SERVICE_EMAIL="$SERVICE_EMAIL" \
+            -e SECURITY_EMAIL="$SECURITY_EMAIL" \
+            -e LOG_LEVEL="$LOG_LEVEL" \
+            -e AWS_S3_REGION="$AWS_S3_REGION" \
+            -e AWS_S3_IMAGES_BUCKET_NAME="$AWS_S3_IMAGES_BUCKET_NAME" \
+            -e MYSQL_HOST="$MYSQL_HOST" \
+            -e MYSQL_PORT="$MYSQL_PORT" \
+            -e MAILSLURP_EMAIL="$MAILSLURP_EMAIL" \
+            -e PORT="$PORT" \
+            -e MYSQL_DATABASE="$MYSQL_DATABASE" \
+            -e MYSQL_USER="$MYSQL_USER" \
+            -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+            -e JWT_SECRET="$JWT_SECRET" \
+            -e AWS_S3_ACCESS_KEY_ID="$AWS_S3_ACCESS_KEY_ID" \
+            -e AWS_S3_SECRET_ACCESS_KEY="$AWS_S3_SECRET_ACCESS_KEY" \
+            -e MAILSLURP_API_KEY="$MAILSLURP_API_KEY" \
+            -e MAILSLURP_INBOX_ID="$MAILSLURP_INBOX_ID" \
+            ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION \
+            pnpm backend:test-with-trace --reporter=list

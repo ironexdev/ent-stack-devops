@@ -1,0 +1,87 @@
+[
+  {
+    "Name": "/ent/uat/APP_BE_AWS_S3_MEDIA_BUCKET_NAME",
+    "Value": "ent-media-bucket",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_AWS_S3_REGION",
+    "Value": "us-east-1",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_DB_HOST",
+    "Value": "<Your DB host>",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_DB_PORT",
+    "Value": "3306",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_LOG_LEVEL",
+    "Value": "info",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_MAILSLURP_EMAIL",
+    "Value": "<Your Mailslurp email>",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_NODE_ENV",
+    "Value": "production",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_PORT",
+    "Value": "3001",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_SECURITY_EMAIL",
+    "Value": "security@mail.site.com",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_BE_SERVICE_EMAIL",
+    "Value": "no-reply@mail.site.com",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_FE_AWS_CLOUDFRONT_DISTRIBUTION_URL",
+    "Value": "<Your Cloufront distribution url>",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_FE_LOG_LEVEL",
+    "Value": "info",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_FE_NODE_ENV",
+    "Value": "production",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_SHARED_BACKEND_URL",
+    "Value": "https://api.uat.site.com",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_SHARED_COOKIE_DOMAIN",
+    "Value": "uat.site.com",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_SHARED_FRONTEND_URL",
+    "Value": "https://uat.site.com",
+    "Type": "String"
+  },
+  {
+    "Name": "/ent/uat/APP_SHARED_SITE_NAME",
+    "Value": "<Your site name>",
+    "Type": "String"
+  }
+]

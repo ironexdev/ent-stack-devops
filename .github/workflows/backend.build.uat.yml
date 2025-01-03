@@ -1,0 +1,51 @@
+name: (UAT) Backend - build
+
+on:
+  workflow_dispatch:
+    inputs:
+      IMAGE_VERSION:
+        default: "latest"
+
+jobs:
+  build_backend:
+    environment: uat
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.RELEASE_AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.7.1
+
+      - name: Build and Push Test Backend Image
+        uses: docker/build-push-action@v6.9.0
+        with:
+          context: .
+          file: docker/images/node-express/Dockerfile
+          target: test
+          push: true
+          tags: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_BE_IMAGE_REPOSITORY }}:test-${{ inputs.IMAGE_VERSION }}"
+          build-args: |
+            PORT=${{ vars.RELEASE_BE_PORT }}
+
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v6.9.0
+        with:
+          context: .
+          file: docker/images/node-express/Dockerfile
+          target: production
+          push: true
+          tags: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_BE_IMAGE_REPOSITORY }}:${{ inputs.IMAGE_VERSION }}"
+          build-args: |
+            PORT=${{ vars.RELEASE_BE_PORT }}
