@@ -1,6 +1,6 @@
 # ENT Stack DevOps
 
-🚧 WORK IN PROGRESS 🚧
+🚧 WORK IN PROGRESS 🚧 - this repo can be used for reference, but setup docs aren't finished yet.
 
 This repository provides tooling and configuration for **CI/CD pipelines** and **infrastructure** deployment of the ENT Stack. By leveraging **AWS ECS**, **AWS S3**, and **CloudFront**, it enables straightforward hosting and automated application rollouts for a seamless UAT (User Acceptance Testing) experience.
 
