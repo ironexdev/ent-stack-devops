@@ -1,8 +1,7 @@
 # Infrastructure Setup
 
 This section describes how to setup **UAT** environment for Application and Media hosting.
-- It is meant for developers that have at least some experience with AWS and Terraform.
-- If you don't want to use it, you can just delete the `infrastructure` and `bin/aws` folders.
+- ⚠ The documentation is written for developers that have at least some experience with AWS and Terraform.
 
 ## Application Hosting
 
@@ -30,10 +29,10 @@ Application hosting is provisioned by Terraform script that creates following re
 - Route 53 domain (will be used to create subdomains)
     - You can also use domain outside of AWS - by either changing the Terraform code or creating an alias for your domain in Route 53
 
-### 1/ Clone the repository
+### 1/ Clone the DevOPS repository
 
 ```bash
-git clone https://github.com/ironexdev/ent-stack.git <your project name>
+git clone https://github.com/ironexdev/ent-stack-devops.git <your project name>
 ```
 
 ### 2/ **Provide environment configuration**
@@ -110,10 +109,10 @@ Provisioned resources may incur costs:
     - Go to AWS CloudFront [key groups](https://console.aws.amazon.com/cloudfront/v4/home#/keygrouplist) and create a new key group
     - Copy id of the key group you created
 
-### 1/ Clone the repository
+### 1/ Clone the DevOPS repository
 
 ```bash
-git clone https://github.com/ironexdev/ent-stack.git <your project name>
+git clone https://github.com/ironexdev/ent-stack-devops.git <your project name>
 ```
 
 ### 2/ **Provide environment configuration**

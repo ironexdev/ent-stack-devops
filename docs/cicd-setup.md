@@ -1,18 +1,17 @@
 # CI/CD Setup
 
 This section outlines the process for setting up CI/CD pipelines to facilitate testing, building, and deploying to the **UAT** environment.
-- It depends on Infrastructure section of this stack.
-- If you don’t want to use it, then just delete the `.github` folder.
+- It depends on Infrastructure provisioned by this stack.
 
 ### Prerequisites
 
 - **Git CLI**
 - **GitHub** account
 
-### 1/ Clone the repository
+### 1/ Clone the DevOPS repository
 
 ```bash
-git clone https://github.com/ironexdev/ent-stack.git <your project name>
+git clone https://github.com/ironexdev/ent-stack-devops.git <your project name>
 ```
 
 ### 2/ Set application variables and secrets
@@ -35,7 +34,7 @@ git clone https://github.com/ironexdev/ent-stack.git <your project name>
 
 ### 3/ Set CI/CD variables and secrets
 
-- Go to `https://github.com/<your account>/<your project>/settings/environments`
+- Go to `https://github.com/<your account>/<your project name>/settings/environments`
 - Click `New environment` and name it `uat`
 - Add variables and secrets to the created environment
     - Some values are prefilled, some are not, go through each of them and fill in/change the values
@@ -83,7 +82,7 @@ RELEASE_AWS_SECRET_ACCESS_KEY=<AWS admin user secret access key>
 ```
 
 ### 4/ How to run
-- Go to `https://github.com/<your account>/<your project>/actions`
+- Go to `https://github.com/<your account>/<your project name>/actions`
 - Select workflow
 - Review inputs
 - Click `Run workflow`

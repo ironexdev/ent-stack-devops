@@ -17,7 +17,7 @@ The **Application Hosting** infrastructure is designed to support a **UAT** (Use
 - Integrated with Route 53 via an alias record, linking the distribution to the provided domain name.
 
 **ECS on EC2**
-- All services – frontend, backend, and database – are deployed with placeholder Node.js containers which are meant to be updated/replaced during CI/CD.
+- All services - frontend, backend, and database - are deployed with placeholder Node.js containers which are meant to be updated/replaced during CI/CD.
 
 **VPC Resources**
 - **Subnets**
