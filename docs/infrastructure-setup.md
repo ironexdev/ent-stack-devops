@@ -36,7 +36,7 @@ Application hosting is provisioned by Terraform script that creates following re
 git clone https://github.com/ironexdev/ent-stack.git <your project name>
 ```
 
-### 2/ __Provide environment configuration__
+### 2/ **Provide environment configuration**
 
 Create and fill-in the `infrastructure/app-uat/.tfvars` file
 
@@ -50,19 +50,19 @@ There is more variables that can be overridden, but they have default values.
 
 Make sure to go through `variables.tf`, `providers.tf` and `backend.tf` files - especially if you want to use different region than **us-east-1**.
 
-### 3/ __Initialize Terraform__
+### 3/ **Initialize Terraform**
 
 ```bash
 tf init
 ```
 
-### 4/ __Create an execution plan__
+### 4/ **Create an execution plan**
 
 ```bash
 tf plan -var-file=.tfvars
 ```
 
-### 5/ __Execute and create AWS resources__
+### 5/ **Execute and create AWS resources**
 
 ```bash
 tf apply -var-file=.tfvars
@@ -88,7 +88,7 @@ Provisioned resources may incur costs:
 - [S3 Pricing](https://aws.amazon.com/s3/pricing/)
 - The cost is same as if you would create these resources manually
 
-__The solution does not handle media optimization.__
+**The solution does not handle media optimization.**
 
 ### Prerequisites
 
@@ -116,7 +116,7 @@ __The solution does not handle media optimization.__
 git clone https://github.com/ironexdev/ent-stack.git <your project name>
 ```
 
-### 2/ __Provide environment configuration__
+### 2/ **Provide environment configuration**
 
 Create and fill-in the `infrastructure/media-uat/.tfvars` file.
 
@@ -130,19 +130,19 @@ There is more variables that can be overridden, but they have default values.
 
 Make sure to go through `variables.tf`, `providers.tf` and `backend.tf` files - especially if you want to use different region than **us-east-1**.
 
-### 3/ __Initialize Terraform__
+### 3/ **Initialize Terraform**
 
 ```bash
 tf init
 ```
 
-### 4/ __Create an execution plan__
+### 4/ **Create an execution plan**
 
 ```bash
 tf plan -var-file=.tfvars
 ```
 
-### 5/ __Execute and create AWS resources__
+### 5/ **Execute and create AWS resources**
 
 ```bash
 tf apply -var-file=.tfvars

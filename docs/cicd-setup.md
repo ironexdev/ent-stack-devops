@@ -43,7 +43,7 @@ git clone https://github.com/ironexdev/ent-stack.git <your project name>
 
 💡 All variables and secrets here are used by CICD prefixed with `ECS_` and `RELEASE_`
 
-__Variables:__
+**Variables:**
 
 ```bash
 ECS_BE_CPU=330
@@ -75,7 +75,7 @@ RELEASE_FE_PORT=3000
 RELEASE_MR_IMAGE_REPOSITORY=ent-uat/migrations
 ```
 
-__Secrets:__
+**Secrets:**
 
 ```bash
 RELEASE_AWS_ACCESS_KEY_ID=<AWS admin user access key id>
@@ -96,7 +96,7 @@ Deployment workflows use ECS task JSON definitions stored in `.github/ecs-task` 
 
 - 5.1/ Install [nektos/act](https://github.com/nektos/act)
 - 5.2/ Set app variables and secrets
-    - Refer to step with the same name in __Setup__ section
+    - Refer to step with the same name in **Setup** section
 - 5.3/ Set CI/CD variables and secrets
     - Similar to GitHub Actions - you need to add CI/CD variables and secrets, but instead of using GitHub environment variables and secretes, you need to create:
         - `.github/workflows/.variables`
@@ -104,4 +104,4 @@ Deployment workflows use ECS task JSON definitions stored in `.github/ecs-task` 
 
 Some of the variables and secrets contain values wrapped in \<\> - these need to be filled in
 
-Refer to list of variables and secrets in the __Setup__ section.
+Refer to list of variables and secrets in the **Setup** section.

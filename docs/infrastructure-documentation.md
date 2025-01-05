@@ -51,7 +51,7 @@ The **Application Hosting** infrastructure is designed to support a **UAT** (Use
 
 ### Operational Costs
 
-- The estimated monthly cost ranges from **\$30 to \$40**, main cost is for the EC2 instance.
+- The estimated monthly cost ranges from **\$20 to \$30**, main cost is for the EC2 instance.
 - This environment is tailored for **UAT** and not recommended for production workloads.
 
 ## Media Hosting

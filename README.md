@@ -2,7 +2,10 @@
 
 This repository provides comprehensive tooling and configuration for **CI/CD pipelines** and **infrastructure** deployment of the ENT Stack. By leveraging **AWS ECS**, **AWS S3**, and **CloudFront**, it enables straightforward hosting and automated application rollouts for a seamless UAT (User Acceptance Testing) experience.
 
----
+- [CI/CD Setup](docs/cicd-setup.md)
+- [CI/CD Documentation](docs/cicd-documentation.md)
+- [Infrastructure Setup](docs/infrastructure-setup.md)
+- [Infrastructure Documentation](docs/infrastructure-documentation.md)
 
 ## CI/CD Overview
 
@@ -27,8 +30,6 @@ For more detailed steps and environment-specific guidelines:
 - [CI/CD Setup](docs/cicd-setup.md)
 - [CI/CD Documentation](docs/cicd-documentation.md)
 
----
-
 ## Infrastructure Overview
 
 The infrastructure provisions an Express backend, a Next.js frontend, and a MySQL database for the UAT environment. Deployed on a single **t3.small** EC2 instance under **AWS ECS**, it integrates seamlessly with **CloudFront** for TLS termination and secured routing.
@@ -48,7 +49,7 @@ The infrastructure provisions an Express backend, a Next.js frontend, and a MySQ
 For projects needing secure or publicly accessible media assets, **AWS S3** and **CloudFront** can be integrated to deliver content at scale. The infrastructure can be extended with an additional S3 bucket and a dedicated CloudFront distribution for high-performance media delivery.
 
 ### Cost and Usage
-This setup is optimized for UAT and pre-production workloads, with a typical monthly cost ranging from \$20 to \$40 depending on EC2 usage and data transfer volumes. It is not recommended for high-traffic production environments without further scaling or architectural modifications.
+This setup is optimized for UAT and pre-production workloads, with a typical monthly cost ranging from \$20 to \$30 depending on EC2 usage and data transfer volumes. It is not recommended for high-traffic production environments without further scaling or architectural modifications.
 
 For in-depth infrastructure configuration and Terraform provisioning steps:
 
