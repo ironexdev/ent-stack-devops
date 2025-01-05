@@ -1,0 +1,107 @@
+# CI/CD Setup
+
+This section outlines the process for setting up CI/CD pipelines to facilitate testing, building, and deploying to the **UAT** environment.
+- It depends on Infrastructure section of this stack.
+- If you don’t want to use it, then just delete the `.github` folder.
+
+### Prerequisites
+
+- **Git CLI**
+- **GitHub** account
+
+### 1/ Clone the repository
+
+```bash
+git clone https://github.com/ironexdev/ent-stack.git <your project name>
+```
+
+### 2/ Set application variables and secrets
+
+- **Option A/** Go to AWS Systems Manager's [Parameter Store](https://console.aws.amazon.com/systems-manager/parameters)  and add `APP` parameters in following format:
+    - Template: `/<project>/<environment><parameter name>`
+    - Example: `/ent/uat/APP_BE_AWS_S3_ACCESS_KEY_ID`
+        - <small>
+            You can add String and SecureString parameters.
+            SecureString parameters are encrypted using AWS Key Management Service (KMS) and can be decrypted only by specified roles.
+          </small>
+
+- **Option B/** Alternatively, use `bin/aws/ssm/ssm-put-parameters.sh` to add multiple parameters at once
+    - You can rename `parameters.example.json` to `parameters.json` and `secrets.example.json` to `secrets.json` and fill in the values
+    - Some values are prefilled, some are not, go through each of them and fill in/change the values
+    - Example call: `FILE=parameters.json REGION=us-east-1 bin/aws/ssm/ssm-parameters/ssm-put-parameter.sh`
+        - Call from the root directory of the project
+
+💡 All variables and secrets in SSM are used by apps prefixed with `APP_`
+
+### 3/ Set CI/CD variables and secrets
+
+- Go to `https://github.com/<your account>/<your project>/settings/environments`
+- Click `New environment` and name it `uat`
+- Add variables and secrets to the created environment
+    - Some values are prefilled, some are not, go through each of them and fill in/change the values
+    - Make sure values correspond with values defined in Terraform code
+
+💡 All variables and secrets here are used by CICD prefixed with `ECS_` and `RELEASE_`
+
+__Variables:__
+
+```bash
+ECS_BE_CPU=330
+ECS_BE_MEMORY=330
+ECS_BE_SERVICE=ent-uat-backend
+ECS_BE_TASK_DEFINITION_FAMILY=ent-uat-backend
+ECS_CLUSTER=ent-uat
+ECS_DB_CPU=330
+ECS_DB_MEMORY=512
+ECS_DB_SERVICE=ent-uat-database
+ECS_DB_TASK_DEFINITION_FAMILY=ent-uat-database
+ECS_EXECUTION_ROLE_ARN=arn:aws:iam::<AWS account id>:role/ent-uat-ecs-task-execution-role
+ECS_FE_CPU=330
+ECS_FE_MEMORY=330
+ECS_FE_SERVICE=ent-uat-frontend
+ECS_FE_TASK_DEFINITION_FAMILY=ent-uat-frontend
+ECS_TASK_ROLE_ARN=arn:aws:iam:<AWS account id>:role/ent-uat-ecs-task-role
+RELEASE_AWS_REGION=us-east-1
+RELEASE_AWS_ACCOUNT_ID=<AWS account id>
+RELEASE_BE_IMAGE_REPOSITORY=ent-uat/node-express
+RELEASE_BE_LOG_GROUP_NAME=/ecs/ent/uat/backend
+RELEASE_BE_PORT=3001
+RELEASE_DB_IMAGE_REPOSITORY=ent-uat/mysql
+RELEASE_DB_LOG_GROUP_NAME=/ecs/ent/uat/database
+RELEASE_DB_PORT=3306
+RELEASE_FE_IMAGE_REPOSITORY=ent-uat/node-next
+RELEASE_FE_LOG_GROUP_NAME=/ecs/ent/uat/frontend
+RELEASE_FE_PORT=3000
+RELEASE_MR_IMAGE_REPOSITORY=ent-uat/migrations
+```
+
+__Secrets:__
+
+```bash
+RELEASE_AWS_ACCESS_KEY_ID=<AWS admin user access key id>
+RELEASE_AWS_SECRET_ACCESS_KEY=<AWS admin user secret access key>
+```
+
+### 4/ How to run
+- Go to `https://github.com/<your account>/<your project>/actions`
+- Select workflow
+- Review inputs
+- Click `Run workflow`
+
+Deployment workflows use ECS task JSON definitions stored in `.github/ecs-task` to deploy services to ECS:
+- JSON files are not valid as they contain placeholder values that are replaced during deployment
+- You can use `bin/aws/ecs/delete-old-task-definitions.sh` helper to delete old task definitions from AWS ECS
+
+### 5/ Setup local pipeline with nektos/act for testing (optional)
+
+- 5.1/ Install [nektos/act](https://github.com/nektos/act)
+- 5.2/ Set app variables and secrets
+    - Refer to step with the same name in __Setup__ section
+- 5.3/ Set CI/CD variables and secrets
+    - Similar to GitHub Actions - you need to add CI/CD variables and secrets, but instead of using GitHub environment variables and secretes, you need to create:
+        - `.github/workflows/.variables`
+        - `.github/workflows/.secrets`
+
+Some of the variables and secrets contain values wrapped in \<\> - these need to be filled in
+
+Refer to list of variables and secrets in the __Setup__ section.
