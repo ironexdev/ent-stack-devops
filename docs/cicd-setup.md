@@ -14,7 +14,11 @@ This section outlines the process for setting up CI/CD pipelines to facilitate t
 git clone https://github.com/ironexdev/ent-stack-devops.git <your project name>
 ```
 
-### 2/ Set application variables and secrets
+### 2/ Copy CI/CD from DevOPS repository to your Application repository
+
+- Copy `.github` and `docker ` directories from the DevOPS repository to your Application repository
+
+### 3/ Set application variables and secrets
 
 - **Option A/** Go to AWS Systems Manager's [Parameter Store](https://console.aws.amazon.com/systems-manager/parameters)  and add `APP` parameters in following format:
     - Template: `/<project>/<environment><parameter name>`
@@ -32,7 +36,7 @@ git clone https://github.com/ironexdev/ent-stack-devops.git <your project name>
 
 💡 All variables and secrets in SSM are used by apps prefixed with `APP_`
 
-### 3/ Set CI/CD variables and secrets
+### 4/ Set CI/CD variables and secrets
 
 - Go to `https://github.com/<your account>/<your project name>/settings/environments`
 - Click `New environment` and name it `uat`
@@ -81,7 +85,7 @@ RELEASE_AWS_ACCESS_KEY_ID=<AWS admin user access key id>
 RELEASE_AWS_SECRET_ACCESS_KEY=<AWS admin user secret access key>
 ```
 
-### 4/ How to run
+### 5/ How to run
 - Go to `https://github.com/<your account>/<your project name>/actions`
 - Select workflow
 - Review inputs
@@ -91,12 +95,12 @@ Deployment workflows use ECS task JSON definitions stored in `.github/ecs-task` 
 - JSON files are not valid as they contain placeholder values that are replaced during deployment
 - You can use `bin/aws/ecs/delete-old-task-definitions.sh` helper to delete old task definitions from AWS ECS
 
-### 5/ Setup local pipeline with nektos/act for testing (optional)
+### 6/ Setup local pipeline with nektos/act for testing (optional)
 
-- 5.1/ Install [nektos/act](https://github.com/nektos/act)
-- 5.2/ Set app variables and secrets
+- 6.1/ Install [nektos/act](https://github.com/nektos/act)
+- 6.2/ Set app variables and secrets
     - Refer to step with the same name in **Setup** section
-- 5.3/ Set CI/CD variables and secrets
+- 6.3/ Set CI/CD variables and secrets
     - Similar to GitHub Actions - you need to add CI/CD variables and secrets, but instead of using GitHub environment variables and secretes, you need to create:
         - `.github/workflows/.variables`
         - `.github/workflows/.secrets`

@@ -1,22 +1,28 @@
 # ENT Stack DevOps
 
-🚧 WORK IN PROGRESS 🚧 - this repo can be used for reference, but setup docs aren't finished yet.
+This repository showcases one of many possible ways to build and deploy the ENT Stack.
 
-This repository provides tooling and configuration for **CI/CD pipelines** and **infrastructure** deployment of the ENT Stack. By leveraging **AWS ECS**, **AWS S3**, and **CloudFront**, it enables straightforward hosting and automated application rollouts for a seamless UAT (User Acceptance Testing) experience.
+It provides infrastructure provisioned on AWS using Terraform for conistetnt, version-controlled setups.
+
+CI/CD pipelines are automated using GitHub Actions to handle testing, building, and deployment efficiently.
 
 - [Infrastructure Setup](docs/infrastructure-setup.md)
 - [Infrastructure Documentation](docs/infrastructure-documentation.md)
 - [CI/CD Setup](docs/cicd-setup.md)
 - [CI/CD Documentation](docs/cicd-documentation.md)
 
+⚠️ **Disclaimers**:
+- The hosting configuration is designed for non-production (UAT) workloads.
+- To use this setup, you should have at least some experience with AWS and Terraform.
+
 ## Infrastructure Overview
 
-The infrastructure provisions an Express backend, a Next.js frontend, and a MySQL database for the UAT environment. Deployed on a single **t3.small** EC2 instance under **AWS ECS**, it integrates with **CloudFront** for TLS termination and secured routing.
+The Terraform code defines a comprehensive AWS infrastructure, including a CloudFront distribution, ECS cluster, IAM roles, task definitions, VPC with public and private subnets, route tables, security groups, and CloudWatch log groups, providing a scalable and secure environment for the ENT Stack.
 
 ### Key Components
 
-**EC2 Instance**
-- Hosts all ECS tasks (backend, frontend, database) with auto-scaling potential based on ECS configurations.
+**ECS on EC2 Instance**
+- The EC2 instance hosts all tasks (backend, frontend, database) based on ECS configurations.
 
 **CloudFront**
 - Handles TLS/HTTPS termination and acts as a secure entry point for both the frontend and backend services.
@@ -38,14 +44,14 @@ This setup is optimized for UAT and pre-production workloads, with a typical mon
 The CI/CD pipeline automatically tests, builds, and deploys the ENT Stack (covering backend, frontend, and database components) into the UAT environment.
 
 **Testing**  
-- Each application layer (Express, Next.js, MySQL) undergoes automated testing within Docker containers using standardized images from **AWS ECR**. This ensures consistency and isolation for backend, frontend, and database tests.
+- Before deployment, the pipeline runs **tests** for the backend and frontend services, making sure that the codebase is stable and ready for release. 
 
 **Deployment**  
-- Once tests succeed, the pipeline pushes Docker images to ECR and deploys them via **AWS ECS**. This includes automatic ECS task updates for each service, ensuring that all components (backend, frontend, database) run the latest stable release.
+- Once tests succeed, the pipeline pushes Docker images to ECR and deploys them via **AWS ECS**. This includes automatic ECS task updates for each service, making sure that all components (backend, frontend, database) run the latest stable release.
 
 **Secrets & Configurations**
-- **AWS Systems Manager (SSM)** houses application secrets (prefixed with `APP_`).
-- **GitHub Secrets** stores CI/CD-specific variables (e.g., `RELEASE_` and `ECS_`), ensuring sensitive data remains secure.
+- **AWS Systems Manager (SSM)** contains application secrets (prefixed with `APP_`).
+- **GitHub Secrets** stores CI/CD-specific variables (e.g., `RELEASE_` and `ECS_`), making sure sensitive data remain secure.
 
 **Tooling**
 - **GitHub Actions** automates workflows for testing, building, and deployment.

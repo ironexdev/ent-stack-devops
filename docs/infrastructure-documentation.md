@@ -89,7 +89,8 @@ The **Media Hosting** setup provides efficient and secure storage and distributi
 ### Integration with Applications
 
 **IAM Policies**
-For seamless integration, create an AWS IAM user with the following policy to enable the application to access S3 resources:
+
+To enable the application to access S3 resources - create an AWS IAM user with the following policy:
 
 ```json
 {

@@ -1,7 +1,8 @@
 # Infrastructure Setup
 
-This section describes how to setup **UAT** environment for Application and Media hosting.
-- ⚠ The documentation is written for developers that have at least some experience with AWS and Terraform.
+This section describes how to setup **UAT** environment for application and media hosting.
+
+⚠ The documentation is written for developers that have at least some experience with AWS and Terraform.
 
 ## Application Hosting
 
@@ -79,8 +80,6 @@ Media hosting is provisioned by Terraform script that creates an S3 bucket and a
 
 The solution supports two access methods: **Public** and **Signed URLs**. You can store and access media files based on your
 access requirements, ensuring secure and efficient media delivery.
-
-The Application (backend and frontend) does not use this by default - if you want to use it, then follow instructions in the **Result** section below.
 
 Provisioned resources may incur costs:
 - [CloudFront Pricing](https://aws.amazon.com/cloudfront/pricing/)
