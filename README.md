@@ -17,7 +17,7 @@ CI/CD pipelines are automated using GitHub Actions to handle testing, building, 
 
 ## Infrastructure Overview
 
-The Terraform code defines a comprehensive AWS infrastructure, including a CloudFront distribution, ECS cluster, IAM roles, task definitions, VPC with public and private subnets, route tables, security groups, and CloudWatch log groups, providing a scalable and secure environment for the <a href="[https://github.com/ironexdev/ent-stack](https://ent-stack.com/)" target="_blank">ENT Stack</a>.
+The Terraform code defines a comprehensive AWS infrastructure, including a CloudFront distribution, ECS cluster, IAM roles, task definitions, VPC with public and private subnets, route tables, security groups, and CloudWatch log groups, providing a scalable and secure environment for the <a href="https://ent-stack.com/" target="_blank">ENT Stack</a>.
 
 ### Key Components
 
