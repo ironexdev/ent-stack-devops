@@ -141,6 +141,7 @@ jobs:
             -e MYSQL_USER="$MYSQL_USER" \
             -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
             -e JWT_SECRET="$JWT_SECRET" \
+            -e RESEND_API_KEY="$RESEND_API_KEY" \
             -e MAILSLURP_INBOX_ID="$MAILSLURP_INBOX_ID" \
             -e MAILSLURP_EMAIL="$MAILSLURP_EMAIL" \
             -p $CONTAINER_PORT:$CONTAINER_PORT \
@@ -148,6 +149,10 @@ jobs:
 
       - name: Run Frontend Container
         env:
+          NEXT_PUBLIC_COOKIE_DOMAIN: "ent.local"
+          NEXT_PUBLIC_BACKEND_URL: "http://api.ent.local:3001"
+          NEXT_PUBLIC_FRONTEND_URL: "http://ent.local:3000"
+          NODE_ENV: "test"
           JWT_SECRET: ${{ env.APP_SHARED_JWT_SECRET }}
           CONTAINER_PORT: ${{ vars.RELEASE_FE_PORT }}
           IMAGE_REPOSITORY: ${{ vars.RELEASE_FE_IMAGE_REPOSITORY }}
@@ -158,6 +163,10 @@ jobs:
             --network app-network \
             --network-alias ent.local \
             --add-host ent.local:127.0.0.1 \
+            -e NEXT_PUBLIC_BACKEND_URL="$NEXT_PUBLIC_BACKEND_URL" \
+            -e NEXT_PUBLIC_FRONTEND_URL="$NEXT_PUBLIC_FRONTEND_URL" \
+            -e NEXT_PUBLIC_COOKIE_DOMAIN="$NEXT_PUBLIC_COOKIE_DOMAIN" \
+            -e NODE_ENV="$NODE_ENV" \
             -e JWT_SECRET="$JWT_SECRET" \
             -p $CONTAINER_PORT:$CONTAINER_PORT \
             ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION
@@ -169,6 +178,7 @@ jobs:
       - name: Run Migrations
         uses: ./.github/actions/run-migrations-uat
         with:
+          NETWORK: app-network
           MYSQL_HOST: ${{ inputs.MYSQL_HOST }}
           IMAGE_VERSION: ${{ inputs.DB_IMAGE_VERSION }}
           RELEASE_AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
@@ -182,7 +192,8 @@ jobs:
           COOKIE_DOMAIN: "ent.local"
           BACKEND_URL: "http://api.ent.local:3001"
           FRONTEND_URL: "http://ent.local:3000"
-          NODE_ENV: ${{ env.APP_BE_NODE_ENV }}
+          NODE_ENV: "test"
+          PORT: 3100
           SERVICE_EMAIL: ${{ env.APP_BE_SERVICE_EMAIL }}
           SECURITY_EMAIL: ${{ env.APP_BE_SECURITY_EMAIL }}
           LOG_LEVEL: ${{ env.APP_BE_LOG_LEVEL }}
@@ -207,6 +218,7 @@ jobs:
             -e BACKEND_URL="$BACKEND_URL" \
             -e FRONTEND_URL="$FRONTEND_URL" \
             -e NODE_ENV="$NODE_ENV" \
+            -e PORT="$PORT" \
             -e SERVICE_EMAIL="$SERVICE_EMAIL" \
             -e SECURITY_EMAIL="$SECURITY_EMAIL" \
             -e LOG_LEVEL="$LOG_LEVEL" \
@@ -219,20 +231,29 @@ jobs:
             -e RESEND_API_KEY="$RESEND_API_KEY" \
             -e MAILSLURP_INBOX_ID="$MAILSLURP_INBOX_ID" \
             -e MAILSLURP_EMAIL="$MAILSLURP_EMAIL" \
+            -p $PORT:$PORT \
             ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION \
             pnpm backend:test-with-trace --reporter=list
 
-      - name: Run Tests in Frontend Test Container
+      - name: Run Frontend Tests
         env:
+          NEXT_PUBLIC_COOKIE_DOMAIN: "ent.local"
+          NEXT_PUBLIC_BACKEND_URL: "http://api.ent.local:3001"
           NEXT_PUBLIC_FRONTEND_URL: "http://ent.local:3000"
+          NODE_ENV: "test"
           JWT_SECRET: ${{ env.APP_SHARED_JWT_SECRET }}
           IMAGE_REPOSITORY: ${{ vars.RELEASE_FE_IMAGE_REPOSITORY }}
           IMAGE_VERSION: test-${{ inputs.FE_IMAGE_VERSION }}
+          PORT: 3101
         run: |
           docker run --rm \
             --name frontend-test \
             --network app-network \
+            -e NEXT_PUBLIC_BACKEND_URL="$NEXT_PUBLIC_BACKEND_URL" \
             -e NEXT_PUBLIC_FRONTEND_URL="$NEXT_PUBLIC_FRONTEND_URL" \
+            -e NEXT_PUBLIC_COOKIE_DOMAIN="$NEXT_PUBLIC_COOKIE_DOMAIN" \
+            -e NODE_ENV="$NODE_ENV" \
             -e JWT_SECRET="$JWT_SECRET" \
+            -p $PORT:$PORT \
             ${{ steps.ecr-login.outputs.registry }}/$IMAGE_REPOSITORY:$IMAGE_VERSION \
             pnpm frontend:test-with-trace --reporter=list
