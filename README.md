@@ -2,7 +2,7 @@
 
 This repository showcases one of many possible ways to build and deploy the <a href="https://ent-stack.com/" target="_blank">ENT Stack</a>.
 
-It provides infrastructure provisioned on AWS using Terraform for conistetnt, version-controlled setups.
+It provides infrastructure provisioned on AWS using Terraform for consistent, version-controlled setups.
 
 CI/CD pipelines are automated using GitHub Actions to handle testing, building, and deployment efficiently.
 
