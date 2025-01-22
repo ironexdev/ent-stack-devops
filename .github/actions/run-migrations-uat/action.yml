@@ -27,12 +27,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Install AWS CLI
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y awscli
-
     - name: Configure AWS Credentials
       shell: bash
       run: |
@@ -78,7 +72,7 @@ runs:
       id: run-migrations
       run: |
         docker run --rm \
-          --network uat-network \
+          --network app-network \
           -e MYSQL_HOST=${{ inputs.MYSQL_HOST }} \
           -e MYSQL_PORT=${{ env.APP_BE_DB_PORT }} \
           -e MYSQL_DATABASE=${{ env.APP_SHARED_DB_NAME }} \

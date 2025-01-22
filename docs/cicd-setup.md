@@ -7,6 +7,7 @@ This section outlines the process for setting up CI/CD pipelines to facilitate t
 
 - **Git CLI**
 - **GitHub** account
+- <a href="https://github.com/jqlang/jq" target="_blank">**JQ**</a>
 
 ### 1/ Clone the DevOPS repository
 
@@ -17,6 +18,10 @@ git clone https://github.com/ironexdev/ent-stack-devops.git <your project name>
 ### 2/ Copy CI/CD from DevOPS repository to your Application repository
 
 - Copy `.github` and `docker ` directories from the DevOPS repository to your Application repository
+<small>
+  - Prerequisite to this is having a previously created application repository based on the <a href="https://ent-stack.com" target="_blank">ENT Stack</a>
+      - If you don't, then follow the <a href="https://ent-stack.com/ent-stack/setup/" target="_blank">setup guide</a>
+  </small>
 
 ### 3/ Set application variables and secrets
 
@@ -31,8 +36,10 @@ git clone https://github.com/ironexdev/ent-stack-devops.git <your project name>
 - **Option B/** Alternatively, use `bin/aws/ssm/ssm-put-parameters.sh` to add multiple parameters at once
     - You can rename `parameters.example.json` to `parameters.json` and `secrets.example.json` to `secrets.json` and fill in the values
     - Some values are prefilled, some are not, go through each of them and fill in/change the values
-    - Example call: `FILE=parameters.json REGION=us-east-1 bin/aws/ssm/ssm-parameters/ssm-put-parameter.sh`
-        - Call from the root directory of the project
+    - Example calls:
+      - `FILE=parameters.json REGION=us-east-1 bin/aws/ssm/ssm-put-parameters.sh`
+      - `FILE=secrets.json REGION=us-east-1 bin/aws/ssm/ssm-put-parameters.sh`
+      - Call from the root directory of the project
 
 💡 All variables and secrets in SSM are used by apps prefixed with `APP_`
 
@@ -84,6 +91,30 @@ RELEASE_MR_IMAGE_REPOSITORY=ent-uat/migrations
 RELEASE_AWS_ACCESS_KEY_ID=<AWS admin user access key id>
 RELEASE_AWS_SECRET_ACCESS_KEY=<AWS admin user secret access key>
 ```
+- Access key id and secret access key can be created in AWS IAM
+  - Create new user for your app
+  - Go to user detail and click `Security credentials` tab
+  - Create access key
+- And then add this policy to the user:
+  - Modify the resource if needed
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:GetParameter",
+                "ssm:GetParameters",
+                "ssm:GetParametersByPath"
+            ],
+            "Resource": [
+                "arn:aws:ssm:*:*:parameter/ent/uat/*"
+            ]
+        }
+    ]
+}
+```
 
 ### 5/ How to run
 - Go to `https://github.com/<your account>/<your project name>/actions`
@@ -95,13 +126,27 @@ Deployment workflows use ECS task JSON definitions stored in `.github/ecs-task` 
 - JSON files are not valid as they contain placeholder values that are replaced during deployment
 - You can use `bin/aws/ecs/delete-old-task-definitions.sh` helper to delete old task definitions from AWS ECS
 
+Order of actions:
+
+- (UAT) Database - build
+- (UAT) Migrations - build
+  - Make sure to run pnpm db:generate locally and commit the changes before running the workflow
+- (UAT) Backend - build
+- (UAT) Frontend - build
+- Tests - run
+- (UAT) Database - deploy
+- (UAT) Migrations - deploy
+- (UAT) Backend - deploy
+- (UAT) Frontend - deploy
+
+
 ### 6/ Setup local pipeline with nektos/act for testing (optional)
 
 - 6.1/ Install [nektos/act](https://github.com/nektos/act)
 - 6.2/ Set app variables and secrets
     - Refer to step with the same name in **Setup** section
 - 6.3/ Set CI/CD variables and secrets
-    - Similar to GitHub Actions - you need to add CI/CD variables and secrets, but instead of using GitHub environment variables and secretes, you need to create:
+    - Similar to GitHub Actions - you need to add CI/CD variables and secrets, but instead of using GitHub environment variables and secrets, you need to create:
         - `.github/workflows/.variables`
         - `.github/workflows/.secrets`
 

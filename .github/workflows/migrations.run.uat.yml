@@ -11,7 +11,7 @@ on:
 
 jobs:
   run_migrations:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: uat
     steps:
       - name: Run Migrations

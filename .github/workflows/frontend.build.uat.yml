@@ -8,16 +8,11 @@ on:
 
 jobs:
   build_frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: uat
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
-
-      - name: Install AWS CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y awscli
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4.0.2

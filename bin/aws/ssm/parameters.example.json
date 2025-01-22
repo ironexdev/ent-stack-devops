@@ -26,7 +26,7 @@
   },
   {
     "Name": "/ent/uat/APP_BE_MAILSLURP_EMAIL",
-    "Value": "<Your Mailslurp email>",
+    "Value": "test@mail.my-site.com",
     "Type": "String"
   },
   {

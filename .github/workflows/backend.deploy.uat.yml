@@ -11,16 +11,11 @@ on:
 
 jobs:
   deploy_backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: uat
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
-
-      - name: Install AWS CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y awscli
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4.0.2
@@ -48,8 +43,6 @@ jobs:
             "APP_BE_SERVICE_EMAIL"
             "APP_BE_SECURITY_EMAIL"
             "APP_SHARED_SITE_NAME"
-            "APP_BE_AWS_S3_REGION"
-            "APP_BE_AWS_S3_MEDIA_BUCKET_NAME"
             "APP_BE_DB_PORT"
             "APP_BE_MAILSLURP_EMAIL"
             "APP_BE_PORT"
@@ -105,8 +98,6 @@ jobs:
             SERVICE_EMAIL=${{ env.APP_BE_SERVICE_EMAIL }}
             SECURITY_EMAIL=${{ env.APP_BE_SECURITY_EMAIL }}
             SITE_NAME=${{ env.APP_SHARED_SITE_NAME }}
-            AWS_S3_REGION=${{ env.APP_BE_AWS_S3_REGION }}
-            AWS_S3_MEDIA_BUCKET_NAME=${{ env.APP_BE_AWS_S3_MEDIA_BUCKET_NAME }}
             MYSQL_HOST=${{ inputs.MYSQL_HOST }}
             MYSQL_PORT=${{ env.APP_BE_DB_PORT }}
             MAILSLURP_EMAIL=${{ env.APP_BE_MAILSLURP_EMAIL }}
@@ -117,9 +108,6 @@ jobs:
             MYSQL_PASSWORD=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_DB_PASSWORD
             JWT_SECRET=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_JWT_SECRET
             RESEND_API_KEY=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_RESEND_API_KEY
-            AWS_S3_ACCESS_KEY_ID=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_AWS_S3_ACCESS_KEY_ID
-            AWS_S3_SECRET_ACCESS_KEY=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_AWS_S3_SECRET_ACCESS_KEY
-            MAILSLURP_API_KEY=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_MAILSLURP_API_KEY
             MAILSLURP_INBOX_ID=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_BE_MAILSLURP_INBOX_ID
 
       - name: Deploy to Amazon ECS service

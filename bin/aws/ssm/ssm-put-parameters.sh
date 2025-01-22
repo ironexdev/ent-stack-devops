@@ -2,7 +2,7 @@
 
 # Helper to upload secret and non-secret parameters to AWS Parameter Store
 #
-# FILE should contain name of .json file stored in bin/aws/ssm/ssm-parameters with an array of objects
+# FILE should contain name of .json file stored in bin/aws/ssm with an array of objects
 #
 # Non-secret values
 # {
@@ -21,19 +21,19 @@
 #
 # Example call
 #
-# FILE=parameters.json REGION=us-east-1 bin/aws/ssm/ssm-parameters/ssm-put-parameter.sh
+# FILE=parameters.json REGION=us-east-1 bin/aws/ssm/ssm-put-parameters.sh
 
 if [ -z "$FILE" ]; then
-  echo "Error: FILE variable not set. Usage: FILE=parameters.json REGION=your-region ./ssm-put-parameter.sh"
+  echo "Error: FILE variable not set. Usage: FILE=parameters.json REGION=your-region ./ssm-put-parameters.sh"
   exit 1
 fi
 
 if [ -z "$REGION" ]; then
-  echo "Error: REGION variable not set. Usage: FILE=parameters.json REGION=your-region ./ssm-put-parameter.sh"
+  echo "Error: REGION variable not set. Usage: FILE=parameters.json REGION=your-region ./ssm-put-parameters.sh"
   exit 1
 fi
 
-FILE="bin/aws/ssm/ssm-parameters/$FILE"
+FILE="bin/aws/ssm/$FILE"
 
 if [ ! -f "$FILE" ]; then
   echo "Error: File not found: $FILE"
