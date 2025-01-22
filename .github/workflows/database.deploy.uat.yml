@@ -54,7 +54,7 @@ jobs:
           container-name: database
           image: "${{ steps.ecr-login.outputs.registry }}/${{ vars.RELEASE_DB_IMAGE_REPOSITORY }}:${{ inputs.IMAGE_VERSION }}"
           environment-variables: |
-            FOO=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/FOO
+            FOO=bar
           secrets: |
             MYSQL_ROOT_PASSWORD=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_DB_ROOT_PASSWORD
             MYSQL_DATABASE=${{ steps.define-ssm-prefix.outputs.SSM_PREFIX }}/APP_SHARED_DB_NAME

@@ -23,7 +23,9 @@ The CI/CD pipeline builds and tests the backend, frontend, and database componen
 - This ensures seamless scalability and efficient orchestration.
 
 **Database Migrations**
-- Database migrations are executed via Docker directly in the CI/CD pipeline. This step ensures that the database schema is consistently updated alongside the application deployment.
+- Database migrations are executed via Docker directly in the CI/CD pipeline.
+- You will have to specify DB host (in GitHub Action input variable) based on running DB ECS Task
+  - Go to `ECS > Clusters > Services > Select DB service > Tasks > Select Task > Public IP`
 
 ### Docker
 

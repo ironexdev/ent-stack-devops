@@ -136,7 +136,9 @@ Order of actions:
 - Tests - run
 - (UAT) Database - deploy
 - (UAT) Migrations - deploy
+  - MYSQL_HOST - `ECS > Clusters > Services > Select DB service > Tasks > Select Task` and use **Public IP**
 - (UAT) Backend - deploy
+    - MYSQL_HOST - go to `ECS > Clusters > Services > Select DB service > Tasks > Select Task` and use **Private IP**
 - (UAT) Frontend - deploy
 
 

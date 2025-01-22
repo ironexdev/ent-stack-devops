@@ -99,15 +99,15 @@ jobs:
       - name: Run Backend Container
         env:
           SITE_NAME: ${{ env.APP_SHARED_SITE_NAME }}
-          COOKIE_DOMAIN: ${{ env.APP_SHARED_COOKIE_DOMAIN }}
+          COOKIE_DOMAIN: "ent.local"
           BACKEND_URL: "http://api.ent.local:3001"
           FRONTEND_URL: "http://ent.local:3000"
-          NODE_ENV: ${{ env.APP_BE_NODE_ENV }}
+          NODE_ENV: "test"
           PORT: ${{ env.APP_BE_PORT }}
           SERVICE_EMAIL: ${{ env.APP_BE_SERVICE_EMAIL }}
           SECURITY_EMAIL: ${{ env.APP_BE_SECURITY_EMAIL }}
           LOG_LEVEL: ${{ env.APP_BE_LOG_LEVEL }}
-          MYSQL_HOST: "database"
+          MYSQL_HOST: ${{ inputs.MYSQL_HOST }}
           MYSQL_PORT: ${{ env.APP_BE_DB_PORT }}
           MYSQL_DATABASE: ${{ env.APP_SHARED_DB_NAME }}
           MYSQL_USER: ${{ env.APP_SHARED_DB_USER }}
@@ -179,14 +179,14 @@ jobs:
       - name: Run Tests in Backend Test Container
         env:
           SITE_NAME: ${{ env.APP_SHARED_SITE_NAME }}
-          COOKIE_DOMAIN: ${{ env.APP_SHARED_COOKIE_DOMAIN }}
+          COOKIE_DOMAIN: "ent.local"
           BACKEND_URL: "http://api.ent.local:3001"
           FRONTEND_URL: "http://ent.local:3000"
           NODE_ENV: ${{ env.APP_BE_NODE_ENV }}
           SERVICE_EMAIL: ${{ env.APP_BE_SERVICE_EMAIL }}
           SECURITY_EMAIL: ${{ env.APP_BE_SECURITY_EMAIL }}
           LOG_LEVEL: ${{ env.APP_BE_LOG_LEVEL }}
-          MYSQL_HOST: "database"
+          MYSQL_HOST: ${{ inputs.MYSQL_HOST }}
           MYSQL_PORT: ${{ env.APP_BE_DB_PORT }}
           MYSQL_DATABASE: ${{ env.APP_SHARED_DB_NAME }}
           MYSQL_USER: ${{ env.APP_SHARED_DB_USER }}

@@ -75,7 +75,6 @@ WORKDIR /home/node/app
 RUN mkdir .next && chown node:node .next
 
 COPY --chown=node:node --from=build /home/node/app/apps/frontend/.next/standalone ./
-COPY --chown=node:node --from=build /home/node/app/apps/frontend/.next/static ./apps/frontend/.next/static
 
 ENTRYPOINT ["/usr/local/bin/tini", "--"]
 CMD ["node", "/home/node/app/apps/frontend/server.js"]

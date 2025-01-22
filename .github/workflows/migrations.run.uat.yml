@@ -14,11 +14,14 @@ jobs:
     runs-on: ubuntu-24.04
     environment: uat
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
       - name: Run Migrations
         uses: ./.github/actions/run-migrations-uat
         with:
           MYSQL_HOST: ${{ inputs.MYSQL_HOST }}
-          IMAGE_VERSION: ${{ inputs.DB_IMAGE_VERSION }}
+          IMAGE_VERSION: ${{ inputs.IMAGE_VERSION }}
           RELEASE_AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
           RELEASE_AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
           RELEASE_AWS_REGION: ${{ vars.RELEASE_AWS_REGION }}
