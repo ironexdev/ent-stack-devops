@@ -96,23 +96,79 @@ RELEASE_AWS_SECRET_ACCESS_KEY=<AWS admin user secret access key>
   - Go to user detail and click `Security credentials` tab
   - Create access key
 - And then add this policy to the user:
-  - Modify the resource if needed
+  - Replace account-id with your AWS account
+  - Change "ent-uat" to your ECS cluster name
 ```
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ssm:GetParameter",
-                "ssm:GetParameters",
-                "ssm:GetParametersByPath"
-            ],
-            "Resource": [
-                "arn:aws:ssm:*:*:parameter/ent/uat/*"
-            ]
-        }
-    ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "AllowSSMParameterAccess",
+			"Effect": "Allow",
+			"Action": [
+				"ssm:GetParameter",
+				"ssm:GetParameters",
+				"ssm:GetParametersByPath"
+			],
+			"Resource": "arn:aws:ssm:us-east-1:<account-id>:parameter/*"
+		},
+		{
+			"Sid": "AllowECRAuthorizationToken",
+			"Effect": "Allow",
+			"Action": "ecr:GetAuthorizationToken",
+			"Resource": "*"
+		},
+		{
+			"Sid": "AllowECRRepositoryAccess",
+			"Effect": "Allow",
+			"Action": [
+				"ecr:BatchGetImage",
+				"ecr:GetDownloadUrlForLayer",
+				"ecr:DescribeRepositories",
+				"ecr:PutImage",
+				"ecr:InitiateLayerUpload",
+				"ecr:UploadLayerPart",
+				"ecr:CompleteLayerUpload",
+				"ecr:BatchCheckLayerAvailability"
+			],
+			"Resource": [
+				"arn:aws:ecr:us-east-1:<account-id>:repository/ent-uat/*"
+			]
+		},
+		{
+			"Sid": "AllowTaskDefinitionManagement",
+			"Effect": "Allow",
+			"Action": [
+				"ecs:RegisterTaskDefinition",
+				"ecs:DescribeTaskDefinition"
+			],
+			"Resource": "arn:aws:ecs:us-east-1:<account-id>:task-definition/*"
+		},
+		{
+			"Sid": "AllowServiceUpdate",
+			"Effect": "Allow",
+			"Action": [
+				"ecs:UpdateService",
+				"ecs:DescribeServices",
+				"ecs:DescribeClusters",
+				"ecs:ListTasks",
+				"ecs:DescribeTasks"
+			],
+			"Resource": [
+				"arn:aws:ecs:us-east-1:<account-id>:cluster/*",
+				"arn:aws:ecs:us-east-1:<account-id>:service/*"
+			]
+		},
+		{
+			"Sid": "AllowPassRole",
+			"Effect": "Allow",
+			"Action": "iam:PassRole",
+			"Resource": [
+				"arn:aws:iam::<account-id>:role/ent-uat-ecs-task-role",
+				"arn:aws:iam::<account-id>:role/ent-uat-ecs-task-execution-role"
+			]
+		}
+	]
 }
 ```
 
